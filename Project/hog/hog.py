@@ -22,6 +22,17 @@ def roll_dice(num_rolls, dice=six_sided):
     assert num_rolls > 0, 'Must roll at least once.'
     # BEGIN PROBLEM 1
     "*** YOUR CODE HERE ***"
+    total = 0
+    pig_out = False
+    for _ in range(num_rolls):
+        outcome = dice()
+        if outcome == 1:
+            pig_out = True
+        total += outcome
+    if pig_out:
+        return 1
+    else:
+        return total
     # END PROBLEM 1
 
 
@@ -34,6 +45,10 @@ def boar_brawl(player_score, opponent_score):
     """
     # BEGIN PROBLEM 2
     "*** YOUR CODE HERE ***"
+    if abs(player_score % 10 - (opponent_score % 100 - opponent_score % 10)//10) > 0:
+        return 3 *abs(player_score % 10 - (opponent_score % 100 - opponent_score % 10)//10) 
+    else:
+        return 1
     # END PROBLEM 2
 
 
@@ -52,17 +67,21 @@ def take_turn(num_rolls, player_score, opponent_score, dice=six_sided):
     assert num_rolls <= 10, 'Cannot roll more than 10 dice.'
     # BEGIN PROBLEM 3
     "*** YOUR CODE HERE ***"
+    if num_rolls == 0:
+        return boar_brawl(player_score, opponent_score)
+    else:
+        return roll_dice(num_rolls, dice)
     # END PROBLEM 3
 
 
-def simple_update(num_rolls, player_score, opponent_score, dice=six_sided):
+def simple_update(num_rolls, player_score, opponent_score, dice=six_sided): #分数累加
     """Return the total score of a player who starts their turn with
     PLAYER_SCORE and then rolls NUM_ROLLS DICE, ignoring Sus Fuss.
     """
     score = player_score + take_turn(num_rolls, player_score, opponent_score, dice)
     return score
 
-def is_prime(n):
+def is_prime(n): #质数判断
     """Return whether N is prime."""
     if n == 1:
         return False
@@ -77,12 +96,24 @@ def num_factors(n):
     """Return the number of factors of N, including 1 and N itself."""
     # BEGIN PROBLEM 4
     "*** YOUR CODE HERE ***"
+    if n == 1:
+        return 1
+    else:
+        k=0
+        for i in range(1, n + 1):
+            if n % i == 0:
+                k += 1
+        return k
     # END PROBLEM 4
 
 def sus_points(score):
     """Return the new score of a player taking into account the Sus Fuss rule."""
     # BEGIN PROBLEM 4
     "*** YOUR CODE HERE ***"
+    if num_factors(score) == 3 or num_factors(score) == 4 :      
+        while is_prime(score) is False: 
+            score += 1
+    return score
     # END PROBLEM 4
 
 def sus_update(num_rolls, player_score, opponent_score, dice=six_sided):
@@ -91,6 +122,7 @@ def sus_update(num_rolls, player_score, opponent_score, dice=six_sided):
     """
     # BEGIN PROBLEM 4
     "*** YOUR CODE HERE ***"
+    return sus_points(simple_update(num_rolls, player_score, opponent_score, dice))
     # END PROBLEM 4
 
 
@@ -130,6 +162,14 @@ def play(strategy0, strategy1, update,
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
     # BEGIN PROBLEM 5
     "*** YOUR CODE HERE ***"
+    while score0 < goal and score1 < goal:
+        if who == 0:
+            num_rolls = strategy0(score0, score1)
+            score0 = update(num_rolls, score0, score1, dice)
+        else:
+            num_rolls = strategy1(score1, score0)
+            score1 = update(num_rolls, score1, score0, dice)
+        who = 1 - who  # Switch players
     # END PROBLEM 5
     return score0, score1
 
@@ -155,6 +195,9 @@ def always_roll(n):
     assert n >= 0 and n <= 10
     # BEGIN PROBLEM 6
     "*** YOUR CODE HERE ***"
+    def strategy(player_score, opponent_score):
+        return n
+    return strategy
     # END PROBLEM 6
 
 
@@ -186,6 +229,11 @@ def is_always_roll(strategy, goal=GOAL):
     """
     # BEGIN PROBLEM 7
     "*** YOUR CODE HERE ***"
+    for i in range(0, goal):
+        for j in range(0, goal):
+            if strategy(i, j) != strategy(0, 0):
+                return False
+    return True
     # END PROBLEM 7
 
 
@@ -202,6 +250,13 @@ def make_averaged(original_function, times_called=1000):
     """
     # BEGIN PROBLEM 8
     "*** YOUR CODE HERE ***"
+    def averaged_fn(*args):
+        total = 0
+        for _ in range(times_called):
+            total += original_function(*args)
+        return total / times_called
+    return averaged_fn
+
     # END PROBLEM 8
 
 
@@ -215,6 +270,11 @@ def max_scoring_num_rolls(dice=six_sided, times_called=1000):
     """
     # BEGIN PROBLEM 9
     "*** YOUR CODE HERE ***"
+    max_rolls = 1
+    for i in range(1, 11):
+        if make_averaged(roll_dice, times_called)(i, dice) > make_averaged(roll_dice, times_called)(max_rolls, dice):
+            max_rolls = i
+    return max_rolls
     # END PROBLEM 9
 
 
@@ -259,6 +319,8 @@ def boar_strategy(score, opponent_score, threshold=11, num_rolls=6):
     points, and returns NUM_ROLLS otherwise. Ignore score and Sus Fuss.
     """
     # BEGIN PROBLEM 10
+    if boar_brawl(score, opponent_score) >= threshold:
+        return 0
     return num_rolls  # Remove this line once implemented.
     # END PROBLEM 10
 
@@ -266,6 +328,8 @@ def boar_strategy(score, opponent_score, threshold=11, num_rolls=6):
 def sus_strategy(score, opponent_score, threshold=11, num_rolls=6):
     """This strategy returns 0 dice when your score would increase by at least threshold."""
     # BEGIN PROBLEM 11
+    if sus_points(score + boar_brawl(score, opponent_score)) - score >= threshold:
+        return 0
     return num_rolls  # Remove this line once implemented.
     # END PROBLEM 11
 
@@ -276,7 +340,50 @@ def final_strategy(score, opponent_score):
     *** YOUR DESCRIPTION HERE ***
     """
     # BEGIN PROBLEM 12
-    return 6  # Remove this line once implemented.
+    """综合策略（决策树版）
+    1) 若 rolling 0/1/2（含 Sus Fuss 后）可直接达到 GOAL，取能赢的最小 n
+    2) 若 Boar Brawl 的期望收益 >= roll 6 的期望收益，则掷 0
+    3) 用期望值比较 {1,2,3,4,5,6}，领先时偏保守（不超过4），落后时允许到6
+    """
+    SAMPLES = 1000  # 可调；越大越稳，越小越快
+
+    # 0 骰（Boar Brawl）：确定性
+    bb = boar_brawl(score, opponent_score)
+    after0 = sus_points(score + bb)  # 整数，安全
+    if after0 >= GOAL:
+        return 0
+    if after0 - score >= 11:
+        return 0
+
+    # 根据分差设定候选集合（领先保守、落后激进）
+    lead = score - opponent_score
+    if GOAL - score <= 12:
+        candidates = [0, 1, 2, 3, 4]   # 临近终点少冒险
+    elif lead >= 15:
+        candidates = [0, 1, 2, 3, 4]   # 领先保守
+    else:
+        candidates = [0, 1, 2, 3, 4, 5, 6]  # 常规
+
+    # 期望：本回合结束后的“总分”的期望；对每个样本先整数结算再 Sus，再求均值
+    averaged_after = make_averaged(
+        lambda n, s, o, d: sus_points(s + take_turn(n, s, o, d)),
+        times_called=SAMPLES
+    )
+
+    best_n = None
+    best_expect = -1.0
+
+    for n in candidates:
+        if n == 0:
+            expect_after = float(after0)  # 已算过，直接用
+        else:
+            expect_after = averaged_after(n, score, opponent_score, six_sided)
+        # 取期望最大的；并列取更小的 n
+        if expect_after > best_expect or (expect_after == best_expect and (best_n is None or n < best_n)):
+            best_expect = expect_after
+            best_n = n
+
+    return best_n
     # END PROBLEM 12
 
 
