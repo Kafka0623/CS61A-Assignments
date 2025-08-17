@@ -38,9 +38,14 @@ def pick(paragraphs, select, k):
     """
     # BEGIN PROBLEM 1
     "*** YOUR CODE HERE ***"
+    def picked(paragraphs, select):
+        picked_paragraphs = []
+        for p in paragraphs:
+            if select(p):
+                picked_paragraphs.append(p)
+        return picked_paragraphs
+    return picked(paragraphs, select)[k] if k < len(picked(paragraphs, select)) else ''
     # END PROBLEM 1
-
-
 def about(subject):
     """Return a function that takes in a paragraph and returns whether
     that paragraph contains one of the words in SUBJECT.
@@ -59,7 +64,12 @@ def about(subject):
     # BEGIN PROBLEM 2
     "*** YOUR CODE HERE ***"
     # END PROBLEM 2
-
+    def judge_about(paragraph):
+        paragraph = lower(paragraph)
+        if any(word in paragraph for word in subject):
+            return True
+        return False
+    return judge_about
 
 def accuracy(typed, source):
     """Return the accuracy (percentage of words typed correctly) of TYPED
@@ -89,7 +99,26 @@ def accuracy(typed, source):
     # BEGIN PROBLEM 3
     "*** YOUR CODE HERE ***"
     # END PROBLEM 3
-
+    if len(typed_words) == 0 and len(source_words) == 0:
+        return 100.0
+    elif len(typed_words) > len(source_words):
+        right = 0
+        for n in range(len(source_words)):
+            if typed_words[n] == source_words[n]:
+                right += 1
+        return right / len(typed_words) * 100
+    elif len(typed_words) < len(source_words):
+        right = 0
+        for n in range(len(typed_words)):
+            if typed_words[n] == source_words[n]:
+                right += 1
+        return right / len(typed_words) * 100
+    else:
+        right = 0
+        for n in range(len(source_words)):
+            if typed_words[n] == source_words[n]:
+                right += 1
+        return right / len(source_words) * 100
 
 def wpm(typed, elapsed):
     """Return the words-per-minute (WPM) of the TYPED string.
@@ -107,7 +136,7 @@ def wpm(typed, elapsed):
     # BEGIN PROBLEM 4
     "*** YOUR CODE HERE ***"
     # END PROBLEM 4
-
+    return len(typed)/5*60/elapsed
 
 ################
 # Phase 4 (EC) #
@@ -168,7 +197,13 @@ def autocorrect(typed_word, word_list, diff_function, limit):
     # BEGIN PROBLEM 5
     "*** YOUR CODE HERE ***"
     # END PROBLEM 5
-
+    min_diff = diff_function(typed_word, word_list[0])
+    min = 0
+    for i in range(len(word_list)):
+        if diff_function(typed_word, word_list[i]) < min_diff:
+            min_diff = diff_function(typed_word, word_list[i])
+            min = i
+    return word_list[min] if min_diff <= limit else typed_word
 
 def furry_fixes(typed, source, limit):
     """A diff function for autocorrect that determines how many letters
@@ -193,7 +228,14 @@ def furry_fixes(typed, source, limit):
     5
     """
     # BEGIN PROBLEM 6
-    assert False, 'Remove this line'
+    if limit < 0:
+        return limit + 1
+    if not typed or not source:
+        return abs(len(typed) - len(source))
+    if typed[0] == source[0]:
+        return furry_fixes(typed[1:], source[1:], limit)
+    else:
+        return 1 + furry_fixes(typed[1:], source[1:], limit-1)
     # END PROBLEM 6
 
 
@@ -214,22 +256,23 @@ def minimum_mewtations(typed, source, limit):
     >>> minimum_mewtations("ckiteus", "kittens", big_limit) # ckiteus -> kiteus -> kitteus -> kittens
     3
     """
-    assert False, 'Remove this line'
-    if ___________: # Base cases should go here, you may add more base cases as needed.
+    if limit < 0:
+        return limit + 1
+    if not typed or not source: # Base cases should go here, you may add more base cases as needed.
         # BEGIN
-        "*** YOUR CODE HERE ***"
+        return abs(len(typed) - len(source))
         # END
     # Recursive cases should go below here
-    if ___________: # Feel free to remove or add additional cases
+    if typed[0] == source[0]: # Feel free to remove or add additional cases
         # BEGIN
-        "*** YOUR CODE HERE ***"
+        return minimum_mewtations(typed[1:], source[1:], limit)
         # END
     else:
-        add = ... # Fill in these lines
-        remove = ...
-        substitute = ...
+        add = 1 + minimum_mewtations(typed, source[1:], limit-1)  # Add a character to the typed word
+        remove = 1 + minimum_mewtations(typed[1:], source, limit-1)  # Remove a character from the typed word
+        substitute = 1 + minimum_mewtations(typed[1:], source[1:], limit-1)  # Substitute a character in the typed word
         # BEGIN
-        "*** YOUR CODE HERE ***"
+        return min(add, remove, substitute)
         # END
 
 
@@ -276,6 +319,15 @@ def report_progress(typed, source, user_id, upload):
     """
     # BEGIN PROBLEM 8
     "*** YOUR CODE HERE ***"
+    correct = 0
+    for i in range(len(typed)):
+        if typed[i] == source[i]:
+            correct += 1
+        else:
+            break
+    progress = correct / len(source)
+    upload({'id': user_id, 'progress': progress})
+    return progress
     # END PROBLEM 8
 
 
@@ -300,6 +352,11 @@ def time_per_word(words, timestamps_per_player):
     tpp = timestamps_per_player  # A shorter name (for convenience)
     # BEGIN PROBLEM 9
     times = []  # You may remove this line
+    for ts in tpp:                      
+        player_times = []
+        for i in range(1, len(ts)):
+            player_times.append(ts[i] - ts[i-1])
+        times.append(player_times)
     # END PROBLEM 9
     return {'words': words, 'times': times}
 
@@ -327,6 +384,17 @@ def fastest_words(words_and_times):
     word_indices = range(len(words))    # contains an *index* for each word
     # BEGIN PROBLEM 10
     "*** YOUR CODE HERE ***"
+    fastest = [[] for _ in player_indices]
+    for j in word_indices:                              
+        min_time = float('inf')
+        fastest_player = 0
+        for i in player_indices:                       
+            if times[i][j] < min_time:
+                min_time = times[i][j]
+                fastest_player = i
+        fastest[fastest_player].append(words[j])
+
+    return fastest
     # END PROBLEM 10
 
 
