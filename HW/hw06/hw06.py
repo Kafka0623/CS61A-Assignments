@@ -50,13 +50,19 @@ class VendingMachine:
     def __init__(self, product, price):
         """Set the product and its price, as well as other instance attributes."""
         "*** YOUR CODE HERE ***"
+        self.product = product
+        self.price = price
+        self.stock = 0
+        self.balance = 0
+
 
     def restock(self, n):
         """Add n to the stock and return a message about the updated stock level.
 
         E.g., Current candy stock: 3
         """
-        "*** YOUR CODE HERE ***"
+        self.stock += n
+        return f"Current {self.product} stock: {self.stock}"
 
     def add_funds(self, n):
         """If the machine is out of stock, return a message informing the user to restock
@@ -69,7 +75,10 @@ class VendingMachine:
         E.g., Current balance: $4
         """
         "*** YOUR CODE HERE ***"
-
+        if self.stock == 0:
+            return f"Nothing left to vend. Please restock. Here is your ${n}."
+        self.balance += n
+        return f"Current balance: ${self.balance}"
     def vend(self):
         """Dispense the product if there is sufficient stock and funds and
         return a message. Update the stock and balance accordingly.
@@ -82,7 +91,17 @@ class VendingMachine:
               Please add $3 more funds.
         """
         "*** YOUR CODE HERE ***"
-
+        if self.stock == 0:
+            return "Nothing left to vend. Please restock."
+        if self.balance < self.price:
+            return f"Please add ${self.price - self.balance} more funds."
+        change = self.balance - self.price
+        self.stock -= 1
+        self.balance = 0
+        if change > 0:
+            return f"Here is your {self.product} and ${change} change."
+        return f"Here is your {self.product}."
+        
 
 def store_digits(n):
     """Stores the digits of a positive number n in a linked list.
@@ -104,7 +123,12 @@ def store_digits(n):
     >>> print("Do not use str or reversed!") if any([r in cleaned for r in ["str", "reversed"]]) else None
     """
     "*** YOUR CODE HERE ***"
-
+    if n < 10:
+        return Link(n)
+    power = 1
+    while n // power >= 10:
+        power *= 10
+    return Link(n // power, store_digits(n % power))
 
 def deep_map_mut(func, s):
     """Mutates a deep link s by replacing each item found with the
@@ -126,8 +150,14 @@ def deep_map_mut(func, s):
     <9 <16> 25 36>
     """
     "*** YOUR CODE HERE ***"
-
-
+    if s is Link.empty:
+        return
+    if isinstance(s.first, Link):
+        deep_map_mut(func, s.first)  
+    else:
+        s.first = func(s.first)       
+    if s.rest is not Link.empty:
+        deep_map_mut(func, s.rest)
 def two_list(vals, counts):
     """
     Returns a linked list according to the two lists that were passed in. Assume
@@ -147,7 +177,16 @@ def two_list(vals, counts):
     Link(1, Link(1, Link(3, Link(3, Link(2)))))
     """
     "*** YOUR CODE HERE ***"
-
+    assert len(vals) == len(counts) and len(vals) > 0
+    def build(i):
+        if i == len(vals):
+            return Link.empty
+        tail = build(i + 1)            
+        v, k = vals[i], counts[i]
+        for _ in range(k):              
+            tail = Link(v, tail)
+        return tail
+    return build(0)
 
 class Link:
     """A linked list.
