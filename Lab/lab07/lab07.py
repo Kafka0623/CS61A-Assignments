@@ -24,11 +24,11 @@ class Account:
         self.balance = 0
         self.holder = account_holder
 
-    def deposit(self, amount):
+    def deposit(self, amount): #存钱
         self.balance = self.balance + amount
         return self.balance
 
-    def withdraw(self, amount):
+    def withdraw(self, amount): #取钱
         if amount > self.balance:
             return "Insufficient funds"
         if amount > self.max_withdrawal:
@@ -40,6 +40,12 @@ class Account:
         """Return the number of years until balance would grow to amount."""
         assert self.balance > 0 and amount > 0 and self.interest > 0
         "*** YOUR CODE HERE ***"
+        self.years = 0
+        current_balance = self.balance
+        while current_balance < amount:
+            current_balance *= (1 + self.interest)
+            self.years += 1
+        return self.years
 
 
 class FreeChecking(Account):
@@ -70,7 +76,15 @@ class FreeChecking(Account):
     free_withdrawals = 2
 
     "*** YOUR CODE HERE ***"
-
+    def withdraw(self, amount):
+        fee = 0 if self.free_withdrawals > 0 else self.withdraw_fee
+        if self.free_withdrawals > 0:
+            self.free_withdrawals -= 1
+        total = amount + fee
+        if total > self.balance:
+            return "Insufficient funds"
+        self.balance -= total
+        return self.balance
 
 def without(s, i):
     """Return a new linked list like s but without the element at index i.
@@ -105,7 +119,13 @@ def duplicate_link(s, val):
     Link(1, Link(2, Link(2, Link(2, Link(2, Link(3))))))
     """
     "*** YOUR CODE HERE ***"
-
+    current = s
+    while current is not Link.empty:
+        if current.first == val:
+            current.rest = Link(current.first, current.rest)
+            current = current.rest.rest
+        else:
+            current = current.rest
 
 class Link:
     """A linked list.
